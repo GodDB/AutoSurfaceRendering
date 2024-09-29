@@ -5,7 +5,7 @@ import android.util.Log
 internal class AutoGLThreadManager {
     @Synchronized
     fun threadExiting(thread: AutoGLThread) {
-        if (AutoSurfaceRenderer.LOG_THREADS) {
+        if (AutoSurfaceRendererHolder.LOG_THREADS) {
             Log.i("GLThread", "exiting tid=" + thread.id)
         }
         thread.mExited = true

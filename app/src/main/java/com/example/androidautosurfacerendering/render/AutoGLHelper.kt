@@ -13,7 +13,7 @@ import javax.microedition.khronos.egl.EGLDisplay
 import javax.microedition.khronos.egl.EGLSurface
 import javax.microedition.khronos.opengles.GL
 
-internal class AutoGLHelper(private val mGLSurfaceViewWeakRef: WeakReference<AutoSurfaceRenderer>) {
+internal class AutoGLHelper(private val mGLSurfaceViewWeakRef: WeakReference<AutoSurfaceRendererHolder>) {
 
     var mEgl: EGL10? = null
     var mEglDisplay: EGLDisplay? = null
@@ -26,7 +26,7 @@ internal class AutoGLHelper(private val mGLSurfaceViewWeakRef: WeakReference<Aut
      * @param configSpec
      */
     fun start() {
-        if (AutoSurfaceRenderer.LOG_EGL) {
+        if (AutoSurfaceRendererHolder.LOG_EGL) {
             Log.w("EglHelper", "start() tid=" + Thread.currentThread().id)
         }
         /*
@@ -67,7 +67,7 @@ internal class AutoGLHelper(private val mGLSurfaceViewWeakRef: WeakReference<Aut
             mEglContext = null
             throwEglException("createContext")
         }
-        if (AutoSurfaceRenderer.LOG_EGL) {
+        if (AutoSurfaceRendererHolder.LOG_EGL) {
             Log.w("EglHelper", "createContext " + mEglContext + " tid=" + Thread.currentThread().id)
         }
 
@@ -81,7 +81,7 @@ internal class AutoGLHelper(private val mGLSurfaceViewWeakRef: WeakReference<Aut
      * @return true if the surface was created successfully.
      */
     fun createSurface(): Boolean {
-        if (AutoSurfaceRenderer.LOG_EGL) {
+        if (AutoSurfaceRendererHolder.LOG_EGL) {
             Log.e("godgod", "EGLHelper  createSurface()  tid=" + Thread.currentThread().id)
         }
         /*
@@ -154,7 +154,7 @@ internal class AutoGLHelper(private val mGLSurfaceViewWeakRef: WeakReference<Aut
                     configFlags = configFlags or GLDebugHelper.CONFIG_CHECK_GL_ERROR
                 }
                 if ((view.mDebugFlags and GLSurfaceView.DEBUG_LOG_GL_CALLS) != 0) {
-                    log = AutoSurfaceRenderer.LogWriter()
+                    log = AutoSurfaceRendererHolder.LogWriter()
                 }
                 gl = GLDebugHelper.wrap(gl, configFlags, log)
             }
@@ -174,7 +174,7 @@ internal class AutoGLHelper(private val mGLSurfaceViewWeakRef: WeakReference<Aut
     }
 
     fun destroySurface() {
-        if (AutoSurfaceRenderer.LOG_EGL) {
+        if (AutoSurfaceRendererHolder.LOG_EGL) {
             Log.e("godgod", "EGLHelper   destroySurface()  tid=" + Thread.currentThread().id)
         }
         destroySurfaceImp()
@@ -194,7 +194,7 @@ internal class AutoGLHelper(private val mGLSurfaceViewWeakRef: WeakReference<Aut
     }
 
     fun finish() {
-        if (AutoSurfaceRenderer.LOG_EGL) {
+        if (AutoSurfaceRendererHolder.LOG_EGL) {
             Log.e("godgod", "EglHelper   finish() tid=" + Thread.currentThread().id)
         }
         if (mEglContext != null) {
@@ -215,7 +215,7 @@ internal class AutoGLHelper(private val mGLSurfaceViewWeakRef: WeakReference<Aut
     companion object {
         fun throwEglException(function: String, error: Int) {
             val message = formatEglError(function, error)
-            if (AutoSurfaceRenderer.LOG_THREADS) {
+            if (AutoSurfaceRendererHolder.LOG_THREADS) {
                 Log.e(
                     "godgod", "EglHelper  throwEglException tid=" + Thread.currentThread().id + " "
                             + message

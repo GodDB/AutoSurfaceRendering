@@ -30,7 +30,7 @@ internal class AutoDefaultContextFactory : GLSurfaceView.EGLContextFactory {
     ) {
         if (!egl.eglDestroyContext(display, context)) {
             Log.e("DefaultContextFactory", "display:$display context: $context")
-            if (AutoSurfaceRenderer.LOG_THREADS) {
+            if (AutoSurfaceRendererHolder.LOG_THREADS) {
                 Log.i("DefaultContextFactory", "tid=" + Thread.currentThread().id)
             }
             AutoGLHelper.throwEglException("eglDestroyContex", egl.eglGetError())

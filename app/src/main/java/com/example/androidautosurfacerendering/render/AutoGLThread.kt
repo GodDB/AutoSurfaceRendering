@@ -13,12 +13,12 @@ internal class AutoGLThread internal constructor(
      * called. This weak reference allows the GLSurfaceView to be garbage collected while
      * the GLThread is still alive.
      */
-    private val mGLSurfaceViewWeakRef: WeakReference<AutoSurfaceRenderer>
+    private val mGLSurfaceViewWeakRef: WeakReference<AutoSurfaceRendererHolder>
 ) : Thread() {
 
     override fun run() {
         name = "AutoGLThread $id"
-        if (AutoSurfaceRenderer.LOG_THREADS) {
+        if (AutoSurfaceRendererHolder.LOG_THREADS) {
             Log.e("godgod", "AutoGLThread - starting tid=$id")
         }
 
@@ -27,7 +27,7 @@ internal class AutoGLThread internal constructor(
         } catch (e: InterruptedException) {
             // fall thru and exit normally
         } finally {
-            AutoSurfaceRenderer.sGLThreadManager.threadExiting(this)
+            AutoSurfaceRendererHolder.sGLThreadManager.threadExiting(this)
         }
     }
 
@@ -50,7 +50,7 @@ internal class AutoGLThread internal constructor(
         if (mHaveEglContext) {
             mEglHelper?.finish()
             mHaveEglContext = false
-            AutoSurfaceRenderer.sGLThreadManager.releaseEglContextLocked(this)
+            AutoSurfaceRendererHolder.sGLThreadManager.releaseEglContextLocked(this)
         }
     }
 
@@ -77,7 +77,7 @@ internal class AutoGLThread internal constructor(
             var finishDrawingRunnable: Runnable? = null
 
             while (true) {
-                synchronized(AutoSurfaceRenderer.sGLThreadManager) {
+                synchronized(AutoSurfaceRendererHolder.sGLThreadManager) {
                     while (true) {
                         if (mShouldExit) {
                             return
@@ -93,15 +93,15 @@ internal class AutoGLThread internal constructor(
                         if (mPaused != mRequestPaused) {
                             pausing = mRequestPaused
                             mPaused = mRequestPaused
-                            (AutoSurfaceRenderer.sGLThreadManager as Object).notifyAll()
-                            if (AutoSurfaceRenderer.LOG_PAUSE_RESUME) {
+                            (AutoSurfaceRendererHolder.sGLThreadManager as Object).notifyAll()
+                            if (AutoSurfaceRendererHolder.LOG_PAUSE_RESUME) {
                                 Log.e("godgod", "AutoGLThread mPaused is now $mPaused tid=$id")
                             }
                         }
 
                         // Do we need to give up the EGL context?
                         if (mShouldReleaseEglContext) {
-                            if (AutoSurfaceRenderer.LOG_SURFACE) {
+                            if (AutoSurfaceRendererHolder.LOG_SURFACE) {
                                 Log.e("godgod", "AutoGLThread releasing EGL context because asked to tid=$id")
                             }
                             stopEglSurfaceLocked()
@@ -119,7 +119,7 @@ internal class AutoGLThread internal constructor(
 
                         // When pausing, release the EGL surface:
                         if (pausing && mHaveEglSurface) {
-                            if (AutoSurfaceRenderer.LOG_SURFACE) {
+                            if (AutoSurfaceRendererHolder.LOG_SURFACE) {
                                 Log.e(
                                     "godgod",
                                     "AutoGLThread  releasing EGL surface because paused tid=$id"
@@ -135,7 +135,7 @@ internal class AutoGLThread internal constructor(
                                 renderer?.mPreserveEGLContextOnPause ?: false
                             if (!preserveEglContextOnPause) {
                                 stopEglContextLocked()
-                                if (AutoSurfaceRenderer.LOG_SURFACE) {
+                                if (AutoSurfaceRendererHolder.LOG_SURFACE) {
                                     Log.e(
                                         "godgod",
                                         "AutoGLThread  releasing EGL context because paused tid=$id"
@@ -146,7 +146,7 @@ internal class AutoGLThread internal constructor(
 
                         // Have we lost the SurfaceView surface?
                         if ((!mHasSurface) && (!mWaitingForSurface)) {
-                            if (AutoSurfaceRenderer.LOG_SURFACE) {
+                            if (AutoSurfaceRendererHolder.LOG_SURFACE) {
                                 Log.e(
                                     "godgod",
                                     "AutoGLThread  noticed surfaceView surface lost tid=$id"
@@ -157,23 +157,23 @@ internal class AutoGLThread internal constructor(
                             }
                             mWaitingForSurface = true
                             mSurfaceIsBad = false
-                            (AutoSurfaceRenderer.sGLThreadManager as Object).notifyAll()
+                            (AutoSurfaceRendererHolder.sGLThreadManager as Object).notifyAll()
                         }
 
                         // Have we acquired the surface view surface?
                         if (mHasSurface && mWaitingForSurface) {
-                            if (AutoSurfaceRenderer.LOG_SURFACE) {
+                            if (AutoSurfaceRendererHolder.LOG_SURFACE) {
                                 Log.e(
                                     "godgod",
                                     "AutoGLThread  noticed surfaceView surface acquired tid=$id"
                                 )
                             }
                             mWaitingForSurface = false
-                            (AutoSurfaceRenderer.sGLThreadManager as Object).notifyAll()
+                            (AutoSurfaceRendererHolder.sGLThreadManager as Object).notifyAll()
                         }
 
                         if (doRenderNotification) {
-                            if (AutoSurfaceRenderer.LOG_SURFACE) {
+                            if (AutoSurfaceRendererHolder.LOG_SURFACE) {
                                 Log.e(
                                     "godgod",
                                     "AutoGLThread   sending render notification tid=$id"
@@ -182,7 +182,7 @@ internal class AutoGLThread internal constructor(
                             mWantRenderNotification = false
                             doRenderNotification = false
                             mRenderComplete = true
-                            (AutoSurfaceRenderer.sGLThreadManager as Object).notifyAll()
+                            (AutoSurfaceRendererHolder.sGLThreadManager as Object).notifyAll()
                         }
 
                         if (mFinishDrawingRunnable != null) {
@@ -201,7 +201,7 @@ internal class AutoGLThread internal constructor(
                                     try {
                                         mEglHelper!!.start()
                                     } catch (t: RuntimeException) {
-                                        AutoSurfaceRenderer.sGLThreadManager.releaseEglContextLocked(
+                                        AutoSurfaceRendererHolder.sGLThreadManager.releaseEglContextLocked(
                                             this
                                         )
                                         throw t
@@ -209,7 +209,7 @@ internal class AutoGLThread internal constructor(
                                     mHaveEglContext = true
                                     createEglContext = true
 
-                                    (AutoSurfaceRenderer.sGLThreadManager as Object).notifyAll()
+                                    (AutoSurfaceRendererHolder.sGLThreadManager as Object).notifyAll()
                                 }
                             }
 
@@ -226,7 +226,7 @@ internal class AutoGLThread internal constructor(
                                     w = mWidth
                                     h = mHeight
                                     mWantRenderNotification = true
-                                    if (AutoSurfaceRenderer.LOG_SURFACE) {
+                                    if (AutoSurfaceRendererHolder.LOG_SURFACE) {
                                         Log.e(
                                             "godgod",
                                             "AutoGLThread  noticing that we want render notification tid="
@@ -240,7 +240,7 @@ internal class AutoGLThread internal constructor(
                                     mSizeChanged = false
                                 }
                                 mRequestRender = false
-                                (AutoSurfaceRenderer.sGLThreadManager as Object).notifyAll()
+                                (AutoSurfaceRendererHolder.sGLThreadManager as Object).notifyAll()
                                 if (mWantRenderNotification) {
                                     wantRenderNotification = true
                                 }
@@ -249,7 +249,7 @@ internal class AutoGLThread internal constructor(
                         } else {
                             if (finishDrawingRunnable != null) {
                                 Log.e(
-                                    AutoSurfaceRenderer.TAG,
+                                    AutoSurfaceRendererHolder.TAG,
                                     "Warning, !readyToDraw() but waiting for " +
                                             "draw finished! Early reporting draw finished."
                                 )
@@ -258,7 +258,7 @@ internal class AutoGLThread internal constructor(
                             }
                         }
                         // By design, this is the only place in a GLThread thread where we wait().
-                        if (AutoSurfaceRenderer.LOG_THREADS) {
+                        if (AutoSurfaceRendererHolder.LOG_THREADS) {
                             Log.e(
                                 "godgod", "AutoGLThread  waiting tid=" + id
                                         + " mHaveEglContext: " + mHaveEglContext
@@ -274,7 +274,7 @@ internal class AutoGLThread internal constructor(
                                         + " mRenderMode: " + mRenderMode
                             )
                         }
-                        (AutoSurfaceRenderer.sGLThreadManager as Object).wait()
+                        (AutoSurfaceRendererHolder.sGLThreadManager as Object).wait()
                     }
                 } // end of synchronized(sGLThreadManager)
 
@@ -285,19 +285,19 @@ internal class AutoGLThread internal constructor(
                 }
 
                 if (createEglSurface) {
-                    if (AutoSurfaceRenderer.LOG_SURFACE) {
+                    if (AutoSurfaceRendererHolder.LOG_SURFACE) {
                         Log.e("godgod", "AutoGLThread  egl createSurface")
                     }
                     if (mEglHelper!!.createSurface()) {
-                        synchronized(AutoSurfaceRenderer.sGLThreadManager) {
+                        synchronized(AutoSurfaceRendererHolder.sGLThreadManager) {
                             mFinishedCreatingEglSurface = true
-                            (AutoSurfaceRenderer.sGLThreadManager as Object).notifyAll()
+                            (AutoSurfaceRendererHolder.sGLThreadManager as Object).notifyAll()
                         }
                     } else {
-                        synchronized(AutoSurfaceRenderer.sGLThreadManager) {
+                        synchronized(AutoSurfaceRendererHolder.sGLThreadManager) {
                             mFinishedCreatingEglSurface = true
                             mSurfaceIsBad = true
-                            (AutoSurfaceRenderer.sGLThreadManager as Object).notifyAll()
+                            (AutoSurfaceRendererHolder.sGLThreadManager as Object).notifyAll()
                         }
                         continue
                     }
@@ -311,7 +311,7 @@ internal class AutoGLThread internal constructor(
                 }
 
                 if (createEglContext) {
-                    if (AutoSurfaceRenderer.LOG_RENDERER) {
+                    if (AutoSurfaceRendererHolder.LOG_RENDERER) {
                         Log.e("godgod", "AutoGLThread  ThronSurfaceCreated")
                     }
                     val renderer = mGLSurfaceViewWeakRef.get()
@@ -327,7 +327,7 @@ internal class AutoGLThread internal constructor(
                 }
 
                 if (sizeChanged) {
-                    if (AutoSurfaceRenderer.LOG_RENDERER) {
+                    if (AutoSurfaceRendererHolder.LOG_RENDERER) {
                         Log.e("godgod", "AutoGLThread  onSurfaceChanged($w, $h)")
                     }
                     val renderer = mGLSurfaceViewWeakRef.get()
@@ -342,7 +342,7 @@ internal class AutoGLThread internal constructor(
                     sizeChanged = false
                 }
 
-                if (AutoSurfaceRenderer.LOG_RENDERER_DRAW_FRAME) {
+                if (AutoSurfaceRendererHolder.LOG_RENDERER_DRAW_FRAME) {
                     Log.w("godgod", "AutoGLThread  onDrawFrame tid=$id")
                 }
                 run {
@@ -367,7 +367,7 @@ internal class AutoGLThread internal constructor(
                 when (swapError) {
                     EGL10.EGL_SUCCESS -> {}
                     EGL11.EGL_CONTEXT_LOST -> {
-                        if (AutoSurfaceRenderer.LOG_SURFACE) {
+                        if (AutoSurfaceRendererHolder.LOG_SURFACE) {
                             Log.e("godgod", "AutoGLThread  egl context lost tid=$id")
                         }
                         lostEglContext = true
@@ -382,9 +382,9 @@ internal class AutoGLThread internal constructor(
                             swapError
                         )
 
-                        synchronized(AutoSurfaceRenderer.sGLThreadManager) {
+                        synchronized(AutoSurfaceRendererHolder.sGLThreadManager) {
                             mSurfaceIsBad = true
-                            (AutoSurfaceRenderer.sGLThreadManager as Object).notifyAll()
+                            (AutoSurfaceRendererHolder.sGLThreadManager as Object).notifyAll()
                         }
                     }
                 }
@@ -397,7 +397,7 @@ internal class AutoGLThread internal constructor(
             /*
                  * clean-up everything...
                  */
-            synchronized(AutoSurfaceRenderer.sGLThreadManager) {
+            synchronized(AutoSurfaceRendererHolder.sGLThreadManager) {
                 stopEglSurfaceLocked()
                 stopEglContextLocked()
             }
@@ -416,27 +416,27 @@ internal class AutoGLThread internal constructor(
 
     var renderMode: Int
         get() {
-            synchronized(AutoSurfaceRenderer.sGLThreadManager) {
+            synchronized(AutoSurfaceRendererHolder.sGLThreadManager) {
                 return mRenderMode
             }
         }
         set(renderMode) {
             require(((GLSurfaceView.RENDERMODE_WHEN_DIRTY <= renderMode) && (renderMode <= GLSurfaceView.RENDERMODE_CONTINUOUSLY))) { "renderMode" }
-            synchronized(AutoSurfaceRenderer.sGLThreadManager) {
+            synchronized(AutoSurfaceRendererHolder.sGLThreadManager) {
                 mRenderMode = renderMode
-                (AutoSurfaceRenderer.sGLThreadManager as Object).notifyAll()
+                (AutoSurfaceRendererHolder.sGLThreadManager as Object).notifyAll()
             }
         }
 
     fun requestRender() {
-        synchronized(AutoSurfaceRenderer.sGLThreadManager) {
+        synchronized(AutoSurfaceRendererHolder.sGLThreadManager) {
             mRequestRender = true
-            (AutoSurfaceRenderer.sGLThreadManager as Object).notifyAll()
+            (AutoSurfaceRendererHolder.sGLThreadManager as Object).notifyAll()
         }
     }
 
     fun requestRenderAndNotify(finishDrawing: Runnable?) {
-        synchronized(AutoSurfaceRenderer.sGLThreadManager) {
+        synchronized(AutoSurfaceRendererHolder.sGLThreadManager) {
             // If we are already on the GL thread, this means a client callback
             // has caused reentrancy, for example via updating the SurfaceView parameters.
             // We will return to the client rendering code, so here we don't need to
@@ -453,24 +453,24 @@ internal class AutoGLThread internal constructor(
                 oldCallback?.run()
                 finishDrawing?.run()
             }
-            (AutoSurfaceRenderer.sGLThreadManager as Object).notifyAll()
+            (AutoSurfaceRendererHolder.sGLThreadManager as Object).notifyAll()
         }
     }
 
     fun surfaceCreated() {
-        synchronized(AutoSurfaceRenderer.sGLThreadManager) {
-            if (AutoSurfaceRenderer.LOG_THREADS) {
+        synchronized(AutoSurfaceRendererHolder.sGLThreadManager) {
+            if (AutoSurfaceRendererHolder.LOG_THREADS) {
                 Log.e("godgod", "AutoGLThread  surfaceCreated tid=$id")
             }
             mHasSurface = true
             mFinishedCreatingEglSurface = false
-            (AutoSurfaceRenderer.sGLThreadManager as Object).notifyAll()
+            (AutoSurfaceRendererHolder.sGLThreadManager as Object).notifyAll()
             while (mWaitingForSurface
                 && !mFinishedCreatingEglSurface
                 && !mExited
             ) {
                 try {
-                    (AutoSurfaceRenderer.sGLThreadManager as Object).wait()
+                    (AutoSurfaceRendererHolder.sGLThreadManager as Object).wait()
                 } catch (e: InterruptedException) {
                     currentThread().interrupt()
                 }
@@ -479,15 +479,15 @@ internal class AutoGLThread internal constructor(
     }
 
     fun surfaceDestroyed() {
-        synchronized(AutoSurfaceRenderer.sGLThreadManager) {
-            if (AutoSurfaceRenderer.LOG_THREADS) {
+        synchronized(AutoSurfaceRendererHolder.sGLThreadManager) {
+            if (AutoSurfaceRendererHolder.LOG_THREADS) {
                 Log.i("godgod", "AutoGLThread  surfaceDestroyed tid=$id")
             }
             mHasSurface = false
-            (AutoSurfaceRenderer.sGLThreadManager as Object).notifyAll()
+            (AutoSurfaceRendererHolder.sGLThreadManager as Object).notifyAll()
             while ((!mWaitingForSurface) && (!mExited)) {
                 try {
-                    (AutoSurfaceRenderer.sGLThreadManager as Object).wait()
+                    (AutoSurfaceRendererHolder.sGLThreadManager as Object).wait()
                 } catch (e: InterruptedException) {
                     currentThread().interrupt()
                 }
@@ -496,18 +496,18 @@ internal class AutoGLThread internal constructor(
     }
 
     fun onPause() {
-        synchronized(AutoSurfaceRenderer.sGLThreadManager) {
-            if (AutoSurfaceRenderer.LOG_PAUSE_RESUME) {
+        synchronized(AutoSurfaceRendererHolder.sGLThreadManager) {
+            if (AutoSurfaceRendererHolder.LOG_PAUSE_RESUME) {
                 Log.e("godgod", "AutoGLThread  onPause tid=$id")
             }
             mRequestPaused = true
-            (AutoSurfaceRenderer.sGLThreadManager as Object).notifyAll()
+            (AutoSurfaceRendererHolder.sGLThreadManager as Object).notifyAll()
             while ((!mExited) && (!mPaused)) {
-                if (AutoSurfaceRenderer.LOG_PAUSE_RESUME) {
+                if (AutoSurfaceRendererHolder.LOG_PAUSE_RESUME) {
                     Log.e("godgod", "MAinThread  onPause waiting for mPaused.")
                 }
                 try {
-                    (AutoSurfaceRenderer.sGLThreadManager as Object).wait()
+                    (AutoSurfaceRendererHolder.sGLThreadManager as Object).wait()
                 } catch (ex: InterruptedException) {
                     currentThread().interrupt()
                 }
@@ -516,20 +516,20 @@ internal class AutoGLThread internal constructor(
     }
 
     fun onResume() {
-        synchronized(AutoSurfaceRenderer.sGLThreadManager) {
-            if (AutoSurfaceRenderer.LOG_PAUSE_RESUME) {
+        synchronized(AutoSurfaceRendererHolder.sGLThreadManager) {
+            if (AutoSurfaceRendererHolder.LOG_PAUSE_RESUME) {
                 Log.i("godgod", "AutoGLThread  onResume tid=$id")
             }
             mRequestPaused = false
             mRequestRender = true
             mRenderComplete = false
-            (AutoSurfaceRenderer.sGLThreadManager as Object).notifyAll()
+            (AutoSurfaceRendererHolder.sGLThreadManager as Object).notifyAll()
             while ((!mExited) && mPaused && (!mRenderComplete)) {
-                if (AutoSurfaceRenderer.LOG_PAUSE_RESUME) {
+                if (AutoSurfaceRendererHolder.LOG_PAUSE_RESUME) {
                     Log.i("godgod", "AutoGLThreadd onResume waiting for !mPaused.")
                 }
                 try {
-                    (AutoSurfaceRenderer.sGLThreadManager as Object).wait()
+                    (AutoSurfaceRendererHolder.sGLThreadManager as Object).wait()
                 } catch (ex: InterruptedException) {
                     currentThread().interrupt()
                 }
@@ -538,7 +538,7 @@ internal class AutoGLThread internal constructor(
     }
 
     fun onWindowResize(w: Int, h: Int) {
-        synchronized(AutoSurfaceRenderer.sGLThreadManager) {
+        synchronized(AutoSurfaceRendererHolder.sGLThreadManager) {
             mWidth = w
             mHeight = h
             mSizeChanged = true
@@ -554,20 +554,20 @@ internal class AutoGLThread internal constructor(
                 return
             }
 
-            (AutoSurfaceRenderer.sGLThreadManager as Object).notifyAll()
+            (AutoSurfaceRendererHolder.sGLThreadManager as Object).notifyAll()
 
             // Wait for thread to react to resize and render a frame
             while (!mExited && !mPaused && !mRenderComplete
                 && ableToDraw()
             ) {
-                if (AutoSurfaceRenderer.LOG_SURFACE) {
+                if (AutoSurfaceRendererHolder.LOG_SURFACE) {
                     Log.i(
                         "godgod",
                         "AutoGLThread  onWindowResize waiting for render complete from tid=$id"
                     )
                 }
                 try {
-                    (AutoSurfaceRenderer.sGLThreadManager as Object).wait()
+                    (AutoSurfaceRendererHolder.sGLThreadManager as Object).wait()
                 } catch (ex: InterruptedException) {
                     currentThread().interrupt()
                 }
@@ -578,12 +578,12 @@ internal class AutoGLThread internal constructor(
     fun requestExitAndWait() {
         // don't call this from GLThread thread or it is a guaranteed
         // deadlock!
-        synchronized(AutoSurfaceRenderer.sGLThreadManager) {
+        synchronized(AutoSurfaceRendererHolder.sGLThreadManager) {
             mShouldExit = true
-            (AutoSurfaceRenderer.sGLThreadManager as Object).notifyAll()
+            (AutoSurfaceRendererHolder.sGLThreadManager as Object).notifyAll()
             while (!mExited) {
                 try {
-                    (AutoSurfaceRenderer.sGLThreadManager as Object).wait()
+                    (AutoSurfaceRendererHolder.sGLThreadManager as Object).wait()
                 } catch (ex: InterruptedException) {
                     currentThread().interrupt()
                 }
@@ -593,7 +593,7 @@ internal class AutoGLThread internal constructor(
 
     fun requestReleaseEglContextLocked() {
         mShouldReleaseEglContext = true
-        (AutoSurfaceRenderer.sGLThreadManager as Object).notifyAll()
+        (AutoSurfaceRendererHolder.sGLThreadManager as Object).notifyAll()
     }
 
     /**
@@ -602,9 +602,9 @@ internal class AutoGLThread internal constructor(
      */
     fun queueEvent(r: Runnable?) {
         requireNotNull(r) { "r must not be null" }
-        synchronized(AutoSurfaceRenderer.sGLThreadManager) {
+        synchronized(AutoSurfaceRendererHolder.sGLThreadManager) {
             mEventQueue.add(r)
-            (AutoSurfaceRenderer.sGLThreadManager as Object).notifyAll()
+            (AutoSurfaceRendererHolder.sGLThreadManager as Object).notifyAll()
         }
     }
 

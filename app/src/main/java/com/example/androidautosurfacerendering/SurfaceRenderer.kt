@@ -7,20 +7,20 @@ import androidx.car.app.AppManager
 import androidx.car.app.CarContext
 import androidx.car.app.SurfaceCallback
 import androidx.car.app.SurfaceContainer
-import com.example.androidautosurfacerendering.render.AutoSurfaceRenderer
+import com.example.androidautosurfacerendering.render.AutoSurfaceRendererHolder
 
 class SurfaceRenderer {
 
-    private var autoSurfaceRenderer: AutoSurfaceRenderer? = null
+    private var autoSurfaceRendererHolder: AutoSurfaceRendererHolder? = null
 
     private val surfaceCallback: SurfaceCallback = object : SurfaceCallback {
         override fun onSurfaceAvailable(surfaceContainer: SurfaceContainer) {
             synchronized(this@SurfaceRenderer) {
                 Log.e("godgod", "onSurfaceAvailable")
-                autoSurfaceRenderer = AutoSurfaceRenderer(surfaceContainer.surface!!, surfaceContainer.width, surfaceContainer.height)
-                autoSurfaceRenderer?.setEGLContextClientVersion(3)
-                autoSurfaceRenderer?.renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY
-                autoSurfaceRenderer?.onCreate()
+                autoSurfaceRendererHolder = AutoSurfaceRendererHolder(surfaceContainer.surface!!, surfaceContainer.width, surfaceContainer.height)
+                autoSurfaceRendererHolder?.setEGLContextClientVersion(3)
+                autoSurfaceRendererHolder?.renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY
+                autoSurfaceRendererHolder?.onCreate()
             }
         }
 
@@ -39,8 +39,8 @@ class SurfaceRenderer {
         override fun onSurfaceDestroyed(surfaceContainer: SurfaceContainer) {
             synchronized(this@SurfaceRenderer) {
                 Log.e("godgod", "onSurfaceDestroyed")
-                autoSurfaceRenderer?.onDestroy()
-                autoSurfaceRenderer = null
+                autoSurfaceRendererHolder?.onDestroy()
+                autoSurfaceRendererHolder = null
             }
         }
 

@@ -22,7 +22,7 @@ internal class AutoDefaultWindowSurfaceFactory : GLSurfaceView.EGLWindowSurfaceF
             // notified via SurfaceHolder.Callback.surfaceDestroyed.
             // In theory the application should be notified first,
             // but in practice sometimes it is not. See b/4588890
-            Log.e(AutoSurfaceRenderer.TAG, "eglCreateWindowSurface", e)
+            Log.e(AutoSurfaceRendererHolder.TAG, "eglCreateWindowSurface", e)
         }
         return result
     }
