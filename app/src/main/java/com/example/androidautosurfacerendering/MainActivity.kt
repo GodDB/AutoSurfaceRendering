@@ -1,5 +1,6 @@
 package com.example.androidautosurfacerendering
 
+import android.opengl.GLSurfaceView
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -16,6 +17,7 @@ import com.example.androidautosurfacerendering.ui.theme.AndroidAutoSurfaceRender
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         enableEdgeToEdge()
         setContent {
             AndroidAutoSurfaceRenderingTheme {
